@@ -1,0 +1,31 @@
+---
+import { getEmDashCollection } from "emdash";
+import Base from "../../../layouts/Base.astro";
+import DateArchive from "../../../components/DateArchive.astro";
+import { getArchiveRange } from "../../../utils/post-urls";
+
+const { year, month } = Astro.params;
+const range = getArchiveRange(year, month);
+if (!range || !year || !month) return Astro.rewrite("/404");
+
+const { entries: posts, error, cacheHint } = await getEmDashCollection("posts", {
+	where: { published_at: range },
+	orderBy: { published_at: "desc" },
+});
+if (error) {
+	console.error("Failed to load month archive:", error);
+	return new Response("Unable to load posts", { status: 500 });
+}
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+if (posts.length === 0) return Astro.rewrite("/404");
+
+const monthName = new Date(range.gte).toLocaleDateString("en-GB", {
+	month: "long",
+	timeZone: "UTC",
+});
+const title = `Posts from ${monthName} ${year}`;
+---
+
+<Base title={title} description={`All posts published in ${monthName} ${year}`}>
+	<DateArchive posts={posts} title={title} year={year} month={month} />
+</Base>

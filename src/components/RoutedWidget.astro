@@ -1,0 +1,149 @@
+---
+import {
+	getEmDashCollection,
+	getMenuWithCacheHint,
+	getTaxonomyTermsWithCacheHint,
+	sanitizeHref,
+	type Widget,
+} from "emdash";
+import { Image, PortableText } from "emdash/ui";
+import { getPostPath } from "../utils/post-urls";
+
+interface Props {
+	widget: Widget;
+}
+
+const { widget } = Astro.props;
+const settings = widget.componentProps ?? {};
+const component = widget.type === "component" ? widget.componentId : undefined;
+const showCount = typeof settings.showCount === "boolean"
+	? settings.showCount
+	: component === "core:categories";
+const limit = typeof settings.limit === "number" ? settings.limit
+	: component === "core:archives" ? 12 : 20;
+const count = typeof settings.count === "number" ? settings.count : 5;
+const showDate = settings.showDate !== false;
+const showThumbnails = settings.showThumbnails === true;
+
+const menuResult = widget.type === "menu" && widget.menuName
+	? await getMenuWithCacheHint(widget.menuName) : null;
+const taxonomy = component === "core:categories" ? "category"
+	: component === "core:tags" ? "tag" : null;
+const termsResult = taxonomy
+	? await getTaxonomyTermsWithCacheHint(taxonomy, { includeCounts: showCount }) : null;
+const terms = component === "core:tags"
+	? termsResult?.data.slice(0, limit) ?? [] : termsResult?.data ?? [];
+const recentResult = component === "core:recent-posts"
+	? await getEmDashCollection("posts", {
+			limit: count,
+			orderBy: { published_at: "desc" },
+		}) : null;
+const datesResult = component === "core:archives"
+	? await getEmDashCollection("posts", { orderBy: { published_at: "desc" } }) : null;
+if (recentResult?.error) throw recentResult.error;
+if (datesResult?.error) throw datesResult.error;
+if (Astro.cache?.enabled) {
+	for (const result of [menuResult, termsResult, recentResult, datesResult]) {
+		if (result) Astro.cache.set(result.cacheHint);
+	}
+}
+
+const archives = new Map<string, { label: string; count: number }>();
+for (const post of datesResult?.entries ?? []) {
+	const date = post.data.publishedAt;
+	if (!date) continue;
+	const year = String(date.getUTCFullYear()).padStart(4, "0");
+	const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+	const yearly = settings.type === "yearly";
+	const path = yearly ? `/${year}` : `/${year}/${month}`;
+	const existing = archives.get(path);
+	if (existing) existing.count++;
+	else archives.set(path, {
+		label: yearly ? year : date.toLocaleDateString("en-US", {
+			year: "numeric", month: "long", timeZone: "UTC",
+		}),
+		count: 1,
+	});
+}
+const archiveList = [...archives].sort(([a], [b]) => b.localeCompare(a)).slice(0, limit);
+const supportedComponents = [
+	"core:recent-posts", "core:categories", "core:tags", "core:search", "core:archives",
+];
+if (component && !supportedComponents.includes(component)) {
+	throw new Error(`Unsupported widget component "${component}"`);
+}
+---
+
+<div class="widget" data-widget-id={widget.id} data-widget-type={widget.type}>
+	{widget.title && <h3 class="widget__title">{widget.title}</h3>}
+	<div class="widget__content">
+		{widget.type === "content" && widget.content && <PortableText value={widget.content} />}
+		{menuResult?.data && (
+			<nav class="widget__menu">
+				<ul>
+					{menuResult.data.items.map((item) => (
+						<li><a href={sanitizeHref(item.url)} title={item.titleAttr || undefined}>{item.label}</a></li>
+					))}
+				</ul>
+			</nav>
+		)}
+		{component === "core:search" && (
+			<form method="get" action="/search" class="widget-search">
+				<input type="search" name="q" aria-label="Search" class="widget-search__input"
+					placeholder={typeof settings.placeholder === "string" ? settings.placeholder : "Search..."} />
+				<button type="submit" class="widget-search__button">Search</button>
+			</form>
+		)}
+		{component === "core:categories" && (
+			<ul class="widget-categories">
+				{terms.length > 0 ? terms.map((term) => (
+					<li>
+						<a href={`/category/${term.slug}`} class="widget-categories__link">{term.label}</a>
+						{showCount && term.count !== undefined && <span class="widget-categories__count">({term.count})</span>}
+					</li>
+				)) : <li class="widget-categories__empty">No categories yet</li>}
+			</ul>
+		)}
+		{component === "core:tags" && (
+			<div class="widget-tags">
+				{terms.length > 0 ? (
+					<ul class="widget-tags__cloud">
+						{terms.map((term) => (
+							<li>
+								<a href={`/tag/${term.slug}`} class="widget-tags__link">{term.label}</a>
+								{showCount && term.count !== undefined && <span class="widget-tags__count">({term.count})</span>}
+							</li>
+						))}
+					</ul>
+				) : <p class="widget-tags__empty">No tags yet</p>}
+			</div>
+		)}
+		{recentResult && (
+			<ul class="widget-recent-posts">
+				{recentResult.entries.map((post) => (
+					<li>
+						{showThumbnails && post.data.featured_image && (
+							<Image image={post.data.featured_image} class="widget-recent-posts__thumbnail" />
+						)}
+						<a href={getPostPath(post)} class="widget-recent-posts__link">{post.data.title}</a>
+						{showDate && post.data.publishedAt && (
+							<time datetime={post.data.publishedAt.toISOString()} class="widget-recent-posts__date">
+								{post.data.publishedAt.toLocaleDateString()}
+							</time>
+						)}
+					</li>
+				))}
+			</ul>
+		)}
+		{component === "core:archives" && (
+			<ul class="widget-archives">
+				{archiveList.map(([path, archive]) => (
+					<li>
+						<a href={path} class="widget-archives__link">{archive.label}</a>
+						<span class="widget-archives__count">({archive.count})</span>
+					</li>
+				))}
+			</ul>
+		)}
+	</div>
+</div>
