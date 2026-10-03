@@ -65,10 +65,43 @@ Set `ROUTING_BASE_URL` to test another local port.
 
 ## Infrastructure
 
-- **Runtime:** Node.js
-- **Database:** SQLite (local file)
-- **Storage:** Local filesystem
-- **Framework:** Astro with `@astrojs/node`
+- **Runtime:** Node.js locally or Vercel functions
+- **Database:** SQLite locally, Turso on Vercel
+- **Storage:** Local filesystem locally, S3-compatible storage on Vercel
+- **Sessions:** Node adapter defaults locally, shared Upstash Redis on Vercel
+- **Framework:** Astro with `@astrojs/node` or `@astrojs/vercel`
+
+### Vercel admin sessions
+
+The Vercel adapter does not provide an Astro session driver. EmDash requires one
+for admin sign-in; per-function memory or filesystem storage is not a reliable
+replacement for shared storage.
+
+Create an Upstash Redis database and configure these secret environment variables
+in Vercel before rebuilding:
+
+- `KV_REST_API_URL`: the database's HTTPS REST endpoint supplied by the Vercel integration.
+- `KV_REST_API_TOKEN`: the read-write REST token, not a read-only token.
+
+Set both for the intended Production and Preview environments. Use separate
+databases for Production and Preview so sessions cannot cross environments, and
+do not use a `PUBLIC_` prefix or commit credentials.
+
+The configuration checks that both variables exist during Vercel builds.
+The session driver in `src/session-driver.ts` reads their values at runtime using
+the Upstash Redis SDK; they are deliberately not
+passed into the serialised driver configuration. Session keys use the
+`gawd-blog:sessions` prefix. Local development and standalone Node builds do not
+require Upstash and retain the Node adapter's default session driver.
+
+After redeploying, verify admin sign-in, a subsequent authenticated request,
+session persistence across a cold start, and sign-out. The configuration tests
+in `pnpm test` exercise the driver with mocked Redis requests, but do not contact
+a live Redis database or replace this deployed authentication check.
+
+See [Astro sessions](https://docs.astro.build/en/guides/sessions/),
+[the Upstash driver](https://unstorage.unjs.io/drivers/upstash), and
+[EmDash session requirements](https://docs.emdashcms.com/deployment/secrets/#session-and-api-tokens).
 
 ## Getting Started
 

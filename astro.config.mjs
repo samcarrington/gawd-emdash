@@ -17,9 +17,21 @@ function requiredEnv(name) {
 
 const siteUrl = isVercel ? requiredEnv("EMDASH_SITE_URL") : undefined;
 
+if (isVercel) {
+	requiredEnv("KV_REST_API_URL");
+	requiredEnv("KV_REST_API_TOKEN");
+}
+
 export default defineConfig({
 	output: "server",
 	adapter: isVercel ? vercel() : node({ mode: "standalone" }),
+	session: isVercel
+		? {
+				driver: {
+					entrypoint: new URL("./src/session-driver.ts", import.meta.url),
+				},
+			}
+		: undefined,
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
