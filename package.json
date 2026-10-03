@@ -14,6 +14,7 @@
 		"start": "node ./dist/server/entry.mjs",
 		"typecheck": "astro check",
 		"test": "node --test tests/post-urls.test.mjs tests/session-config.test.mjs",
+		"test:vercel": "node --test tests/vercel-bundle.test.mjs",
 		"test:routes": "node --test tests/routes.test.mjs"
 	},
 	"dependencies": {
@@ -22,6 +23,8 @@
 		"@astrojs/vercel": "11.0.11",
 		"@aws-sdk/client-s3": "^3.1145.0",
 		"@aws-sdk/s3-request-presigner": "^3.1145.0",
+		"@libsql/client": "^0.8.1",
+		"@libsql/kysely-libsql": "^0.4.1",
 		"@upstash/redis": "^1.39.0",
 		"astro": "^7.3.5",
 		"emdash": "^1.1.0",

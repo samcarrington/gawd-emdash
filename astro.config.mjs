@@ -25,6 +25,26 @@ if (isVercel) {
 export default defineConfig({
 	output: "server",
 	adapter: isVercel ? vercel() : node({ mode: "standalone" }),
+	vite: isVercel
+		? {
+				plugins: [{
+					name: "vercel-turso-bundling",
+					enforce: "post",
+					config(config) {
+						// EmDash explicitly externalises this dialect, which overrides noExternal.
+						if (config.ssr && Array.isArray(config.ssr.external)) {
+							config.ssr.external = config.ssr.external.filter(
+								(id) => id !== "@libsql/kysely-libsql",
+							);
+						}
+					},
+				}],
+				ssr: { noExternal: ["@libsql/kysely-libsql"] },
+				resolve: {
+					alias: [{ find: /^@libsql\/client$/, replacement: "@libsql/client/web" }],
+				},
+			}
+		: undefined,
 	session: isVercel
 		? {
 				driver: {

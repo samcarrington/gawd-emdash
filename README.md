@@ -71,6 +71,21 @@ Set `ROUTING_BASE_URL` to test another local port.
 - **Sessions:** Node adapter defaults locally, shared Upstash Redis on Vercel
 - **Framework:** Astro with `@astrojs/node` or `@astrojs/vercel`
 
+### Vercel database packaging
+
+The Turso runtime declares `@libsql/kysely-libsql` and `@libsql/client` as direct
+production dependencies. Relying only on EmDash's optional dependency can produce
+a successful build whose Vercel function fails with `ERR_MODULE_NOT_FOUND`.
+For Vercel only, the dialect is bundled and its client import is redirected to
+`@libsql/client/web`, which supports remote Turso without native SQLite bindings.
+Local Node builds continue using EmDash's standard SQLite adapter unchanged.
+
+After building with the Vercel adapter (for example, `vercel build --prod`), run
+`pnpm test:vercel` before deployment. This copies the generated functions into
+temporary directories outside the workspace and imports their database dialect
+and handler without access to the workspace's dependencies. It verifies runtime
+packaging, not connectivity to Turso or authentication against Redis.
+
 ### Vercel admin sessions
 
 The Vercel adapter does not provide an Astro session driver. EmDash requires one
