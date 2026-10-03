@@ -15,6 +15,8 @@ function requiredEnv(name) {
 	return value;
 }
 
+const siteUrl = isVercel ? requiredEnv("EMDASH_SITE_URL") : undefined;
+
 export default defineConfig({
 	output: "server",
 	adapter: isVercel ? vercel() : node({ mode: "standalone" }),
