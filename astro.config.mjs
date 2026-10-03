@@ -1,14 +1,23 @@
 import node from "@astrojs/node";
 import react from "@astrojs/react";
+import vercel from "@astrojs/vercel";
 import { defineConfig, fontProviders } from "astro/config";
-import emdash, { local } from "emdash/astro";
-import { sqlite } from "emdash/db";
+import emdash, { local, s3 } from "emdash/astro";
+import { libsql, sqlite } from "emdash/db";
+
+const isVercel = process.env.VERCEL === "1";
+
+function requiredEnv(name) {
+	const value = process.env[name];
+	if (!value) {
+		throw new Error(`Missing required environment variable: ${name}`);
+	}
+	return value;
+}
 
 export default defineConfig({
 	output: "server",
-	adapter: node({
-		mode: "standalone",
-	}),
+	adapter: isVercel ? vercel() : node({ mode: "standalone" }),
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
@@ -16,11 +25,23 @@ export default defineConfig({
 	integrations: [
 		react(),
 		emdash({
-			database: sqlite({ url: "file:./data.db" }),
-			storage: local({
-				directory: "./uploads",
-				baseUrl: "/_emdash/api/media/file",
-			}),
+			siteUrl,
+			database: isVercel
+				? libsql({
+						url: requiredEnv("TURSO_DATABASE_URL"),
+						authToken: requiredEnv("TURSO_AUTH_TOKEN"),
+					})
+				: sqlite({ url: "file:./data.db" }),
+			storage: isVercel
+				? s3()
+				: local({
+						directory: "./uploads",
+						baseUrl: "/_emdash/api/media/file",
+					}),
+			migrations: {
+				runtime: isVercel ? "check" : "auto",
+				dev: "auto",
+			},
 		}),
 	],
 	fonts: [
