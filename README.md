@@ -71,6 +71,38 @@ Set `ROUTING_BASE_URL` to test another local port.
 - **Sessions:** Node adapter defaults locally, shared Upstash Redis on Vercel
 - **Framework:** Astro with `@astrojs/node` or `@astrojs/vercel`
 
+### AWS S3 access
+
+The existing production bucket is `gawd-emdash-479317435199-eu-west-2-an`
+in London (`eu-west-2`). Keep it private, with all public-access blocks enabled
+and ACLs disabled. Its upload CORS rule allows `PUT` from
+`https://gawd-emdash.vercel.app`.
+
+[The application access policy](infra/aws/s3-access-policy.json) grants
+`s3:ListBucket` on this bucket and `s3:GetObject`, `s3:PutObject` and
+`s3:DeleteObject` on its objects, over HTTPS only. It is an **IAM identity
+policy**, to attach to a dedicated application user or role, not a bucket policy.
+Creating or validating the file does not apply permissions in AWS.
+
+The current EmDash S3 adapter reads these variables at runtime:
+
+- `S3_ENDPOINT`: `https://s3.eu-west-2.amazonaws.com`.
+- `S3_BUCKET`: `gawd-emdash-479317435199-eu-west-2-an`.
+- `S3_REGION`: `eu-west-2`.
+- `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`: the dedicated application's
+  scoped credentials, never root credentials.
+
+Set them as Vercel Production environment variables and redeploy. Leave
+`S3_PUBLIC_URL` unset for private storage; use separate resources for Preview.
+Missing endpoint or bucket configuration prevents EmDash from initialising,
+including its admin setup and transfer APIs. A site transfer needs storage for
+package staging even when the source has no uploaded media.
+
+An IAM role alone does not authenticate Vercel. Using
+[Vercel OIDC federation](https://vercel.com/docs/oidc/aws) instead of permanent
+application keys requires additional credential-provider integration with the
+current adapter.
+
 ### Vercel database packaging
 
 The Turso runtime declares `@libsql/kysely-libsql` and `@libsql/client` as direct
