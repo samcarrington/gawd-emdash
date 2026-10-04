@@ -3,8 +3,8 @@ import { getWidgetAreaWithCacheHint } from "emdash";
 import RoutedWidget from "./RoutedWidget.astro";
 
 interface Props {
-	name: string;
-	class?: string;
+  name: string;
+  class?: string;
 }
 
 const { name, class: className } = Astro.props;
@@ -13,7 +13,9 @@ if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 ---
 
 {area && area.widgets.length > 0 && (
-	<div class:list={["widget-area", className]} data-widget-area={name}>
-		{area.widgets.map((widget) => <RoutedWidget widget={widget} />)}
-	</div>
+  <div class:list={["widget-area", className]} data-widget-area={name}>
+    {area.widgets.map((widget) => (
+      <RoutedWidget widget={widget} />
+    ))}
+  </div>
 )}

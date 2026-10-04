@@ -1,14 +1,18 @@
 ---
 import { getEmDashCollection } from "emdash";
-import Base from "../../../layouts/Base.astro";
 import DateArchive from "../../../components/DateArchive.astro";
+import Base from "../../../layouts/Base.astro";
 import { getArchiveRange } from "../../../utils/post-urls";
 
 const { year, month } = Astro.params;
 const range = getArchiveRange(year, month);
 if (!range || !year || !month) return Astro.rewrite("/404");
 
-const { entries: posts, error, cacheHint } = await getEmDashCollection("posts", {
+const {
+	entries: posts,
+	error,
+	cacheHint,
+} = await getEmDashCollection("posts", {
 	where: { published_at: range },
 	orderBy: { published_at: "desc" },
 });

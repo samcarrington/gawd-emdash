@@ -38,7 +38,9 @@ export function extractText(blocks: PortableTextBlock[] | undefined): string {
 		.filter(isTextBlock)
 		.map((block) =>
 			block.children
-				.filter((child) => child._type === "span" && typeof child.text === "string")
+				.filter(
+					(child) => child._type === "span" && typeof child.text === "string",
+				)
 				.map((span) => span.text)
 				.join(""),
 		)
@@ -48,12 +50,15 @@ export function extractText(blocks: PortableTextBlock[] | undefined): string {
 /**
  * Calculate reading time in minutes from Portable Text content
  */
-export function getReadingTime(content: PortableTextBlock[] | undefined): number {
+export function getReadingTime(
+	content: PortableTextBlock[] | undefined,
+): number {
 	const text = extractText(content);
 	const cjkCharacterCount = countCjkCharacters(text);
 	const wordCount = countWords(text.replace(CJK_CHARACTER_REGEX, " "));
 	const minutes = Math.ceil(
-		wordCount / WORDS_PER_MINUTE + cjkCharacterCount / CJK_CHARACTERS_PER_MINUTE,
+		wordCount / WORDS_PER_MINUTE +
+			cjkCharacterCount / CJK_CHARACTERS_PER_MINUTE,
 	);
 	return Math.max(1, minutes);
 }

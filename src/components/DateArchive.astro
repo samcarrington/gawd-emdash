@@ -1,80 +1,84 @@
 ---
 import type { ContentEntry } from "emdash";
 import type { Post } from "../../emdash-env";
-import PostCard from "./PostCard.astro";
 import { getPostPath } from "../utils/post-urls";
 import { getReadingTime } from "../utils/reading-time";
+import PostCard from "./PostCard.astro";
 
 interface Props {
-	posts: ContentEntry<Post>[];
-	title: string;
-	year: string;
-	month?: string;
+  posts: ContentEntry<Post>[];
+  title: string;
+  year: string;
+  month?: string;
 }
 
 const { posts, title, year, month } = Astro.props;
 ---
 
 <section class="date-archive">
-	<header class="archive-header">
-		{month && <a href={`/${year}`}>All posts from {year}</a>}
-		<h1>{title}</h1>
-		<p>{posts.length} {posts.length === 1 ? "article" : "articles"}</p>
-	</header>
-	<div class="posts-grid">
-		{posts.map((post) => (
-			<PostCard
-				title={post.data.title}
-				excerpt={post.data.excerpt}
-				featuredImage={post.data.featured_image}
-				href={getPostPath(post)}
-				date={post.data.publishedAt ?? undefined}
-				readingTime={getReadingTime(post.data.content)}
-				tags={(post.data.terms?.tag ?? []).map((term) => ({
-					slug: term.slug,
-					label: term.label,
-				}))}
-				bylines={post.data.bylines ?? []}
-				edit={post.edit}
-			/>
-		))}
-	</div>
+  <header class="archive-header">
+    {month && <a href={`/${year}`}>All posts from {year}</a>}
+    <h1>{title}</h1>
+    <p>{posts.length} {posts.length === 1 ? "article" : "articles"}</p>
+  </header>
+  <div class="posts-grid">
+    {posts.map((post) => (
+  <PostCard
+    title={post.data.title}
+    excerpt={post.data.excerpt}
+    featuredImage={post.data.featured_image}
+    href={getPostPath(post)}
+    date={post.data.publishedAt ?? undefined}
+    readingTime={getReadingTime(post.data.content)}
+    tags={(post.data.terms?.tag ?? []).map((term) => ({
+      slug: term.slug,
+      label: term.label,
+    }))}
+    bylines={post.data.bylines ?? []}
+    edit={post.edit}
+  />
+))}
+  </div>
 </section>
 
 <style>
-	.date-archive {
-		max-width: var(--wide-width);
-		margin: 0 auto;
-		padding: var(--spacing-12) var(--spacing-6);
-	}
+.date-archive {
+  max-width: var(--wide-width);
+  margin: 0 auto;
+  padding: var(--spacing-12) var(--spacing-6);
+}
 
-	.archive-header {
-		margin-bottom: var(--spacing-12);
-		padding-bottom: var(--spacing-8);
-		border-bottom: 1px solid var(--color-border-subtle);
-	}
+.archive-header {
+  margin-bottom: var(--spacing-12);
+  padding-bottom: var(--spacing-8);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
 
-	.archive-header h1 {
-		font-size: var(--font-size-4xl);
-		font-weight: var(--font-weight-display);
-		letter-spacing: var(--tracking-tight);
-	}
+.archive-header h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-display);
+  letter-spacing: var(--tracking-tight);
+}
 
-	.archive-header p {
-		color: var(--color-muted);
-	}
+.archive-header p {
+  color: var(--color-muted);
+}
 
-	.posts-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-8);
-	}
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-8);
+}
 
-	@media (max-width: 1024px) {
-		.posts-grid { grid-template-columns: repeat(2, 1fr); }
-	}
+@media (max-width: 1024px) {
+  .posts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-	@media (max-width: 640px) {
-		.posts-grid { grid-template-columns: 1fr; }
-	}
+@media (max-width: 640px) {
+  .posts-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
